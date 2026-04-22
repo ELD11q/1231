@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الراصد الذكي — المنصة الموحدة للرصد البيئي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050b0a;
+  --bg2: #081210;
+  --bg3: #0d1a18;
+  --green: #00e5a0;
+  --green-dim: #00b87a;
+  --teal: #00ffd5;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --blue: #38bdf8;
+  --text: #dff5ee;
+  --muted: #527a6e;
+  --border: rgba(0,229,160,0.1);
+  --card: rgba(0,229,160,0.03);
+  --shadow: 0 0 40px rgba(0,229,160,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Tajawal',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* ─── CURSOR ─── */
+#cursor{
+  position:fixed;width:12px;height:12px;
+  background:var(--green);border-radius:50%;
+  pointer-events:none;z-index:9999;
+  transform:translate(-50%,-50%);
+  transition:transform 0.1s,background 0.2s;
+  box-shadow:0 0 16px var(--green);
+}
+#cursor-ring{
+  position:fixed;width:36px;height:36px;
+  border:1px solid rgba(0,229,160,0.5);
+  border-radius:50%;pointer-events:none;
+  z-index:9998;transform:translate(-50%,-50%);
+  transition:transform 0.18s ease,width 0.2s,height 0.2s;
+}
+
+/* ─── GRAIN ─── */
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:999;opacity:0.5;
+}
+
+/* ─── NAV ─── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:800;
+  padding:0 60px;height:68px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(5,11,10,0.8);
+  backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+  transition:all 0.3s;
+}
+nav.scrolled{background:rgba(5,11,10,0.97);border-bottom-color:rgba(0,229,160,0.18)}
+
+.logo{
+  display:flex;align-items:center;gap:14px;
+  font-size:1.3rem;font-weight:900;color:var(--text);
+  text-decoration:none;letter-spacing:-0.3px;
+}
+.logo-icon{
+  width:38px;height:38px;position:relative;
+  display:flex;align-items:center;justify-content:center;
+}
+.radar-base{
+  width:38px;height:38px;border-radius:50%;
+  border:2px solid rgba(0,229,160,0.4);
+  position:absolute;
+}
+.radar-sweep{
+  position:absolute;width:50%;height:2px;
+  background:linear-gradient(90deg,transparent,var(--green));
+  transform-origin:right center;right:50%;top:50%;
+  animation:sweep 2s linear infinite;
+}
+@keyframes sweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.radar-dot{
+  width:8px;height:8px;background:var(--green);
+  border-radius:50%;box-shadow:0 0 8px var(--green);
+  position:relative;z-index:2;
+}
+
+.nav-links{
+  display:flex;gap:32px;list-style:none;
+  font-size:0.88rem;font-weight:500;
+}
+.nav-links a{
+  color:var(--muted);text-decoration:none;
+  transition:color 0.2s;position:relative;
+}
+.nav-links a::after{
+  content:'';position:absolute;bottom:-3px;right:0;
+  width:0;height:1px;background:var(--green);
+  transition:width 0.3s;
+}
+.nav-links a:hover{color:var(--green)}
+.nav-links a:hover::after{width:100%}
+
+.nav-cta{
+  background:transparent;border:1.5px solid var(--green);
+  color:var(--green);padding:9px 24px;border-radius:6px;
+  font-weight:700;font-size:0.88rem;text-decoration:none;
+  transition:all 0.2s;font-family:'Tajawal',sans-serif;
+}
+.nav-cta:hover{
+  background:var(--green);color:var(--bg);
+  box-shadow:0 0 24px rgba(0,229,160,0.3);
+}
+
+/* ─── HERO ─── */
+.hero{
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;padding:100px 60px 60px;
+}
+canvas#particles{
+  position:absolute;inset:0;z-index:0;opacity:0.5;
+}
+.hero-grid-overlay{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(0,229,160,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,160,0.03) 1px,transparent 1px);
+  background-size:64px 64px;
+}
+.hero-radial{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 50%,rgba(0,229,160,0.07) 0%,transparent 70%);
+}
+
+.hero-inner{
+  position:relative;z-index:2;
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:80px;align-items:center;max-width:1200px;width:100%;
+}
+
+.hero-left{}
+
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:10px;
+  background:rgba(0,229,160,0.07);
+  border:1px solid rgba(0,229,160,0.2);
+  color:var(--green);padding:8px 18px;border-radius:100px;
+  font-size:0.78rem;font-weight:700;letter-spacing:1px;
+  margin-bottom:28px;opacity:0;
+  animation:riseIn 0.7s 0.1s ease forwards;
+}
+.eyebrow-dot{
+  width:7px;height:7px;background:var(--green);
+  border-radius:50%;box-shadow:0 0 8px var(--green);
+  animation:blink 1.5s infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.hero-title{
+  font-size:clamp(2.8rem,5.5vw,5rem);
+  font-weight:900;line-height:1.1;
+  margin-bottom:20px;
+  opacity:0;animation:riseIn 0.7s 0.2s ease forwards;
+}
+.hero-title span{color:var(--green);text-shadow:0 0 30px rgba(0,229,160,0.35)}
+
+.hero-title-sub{
+  font-size:1.6rem;font-weight:300;
+  color:var(--muted);margin-bottom:24px;
+  opacity:0;animation:riseIn 0.7s 0.3s ease forwards;
+}
+
+.hero-desc{
+  font-size:1.05rem;color:rgba(223,245,238,0.65);
+  line-height:1.9;max-width:500px;margin-bottom:40px;
+  opacity:0;animation:riseIn 0.7s 0.4s ease forwards;font-weight:400;
+}
+
+.hero-btns{
+  display:flex;gap:14px;flex-wrap:wrap;
+  opacity:0;animation:riseIn 0.7s 0.5s ease forwards;
+}
+.btn{
+  padding:14px 32px;border-radius:8px;
+  font-weight:700;font-size:0.95rem;
+  text-decoration:none;cursor:pointer;
+  transition:all 0.25s;font-family:'Tajawal',sans-serif;
+  display:inline-flex;align-items:center;gap:8px;border:none;
+}
+.btn-green{
+  background:var(--green);color:var(--bg);
+}
+.btn-green:hover{
+  background:var(--teal);
+  box-shadow:0 0 32px rgba(0,229,160,0.45);
+  transform:translateY(-2px);
+}
+.btn-ghost{
+  background:transparent;color:var(--text);
+  border:1.5px solid rgba(255,255,255,0.12);
+}
+.btn-ghost:hover{
+  border-color:rgba(0,229,160,0.4);color:var(--green);
+  transform:translateY(-2px);
+}
+
+/* ─── HERO RIGHT – MOCKUP ─── */
+.hero-right{
+  opacity:0;animation:riseIn 0.8s 0.6s ease forwards;
+}
+.mockup-frame{
+  background:var(--bg3);
+  border:1px solid rgba(0,229,160,0.15);
+  border-radius:16px;overflow:hidden;
+  box-shadow:0 32px 80px rgba(0,0,0,0.6),0 0 60px rgba(0,229,160,0.06);
+}
+.mockup-bar{
+  padding:12px 20px;
+  background:rgba(0,229,160,0.04);
+  border-bottom:1px solid rgba(0,229,160,0.08);
+  display:flex;align-items:center;gap:8px;
+}
+.mockup-dot{
+  width:10px;height:10px;border-radius:50%;
+}
+.mockup-title{
+  font-size:0.78rem;color:var(--muted);
+  margin-right:auto;font-family:'IBM Plex Mono',monospace;
+}
+.mockup-body{padding:20px;}
+
+.dash-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;
+}
+.dash-stat{
+  background:rgba(0,229,160,0.05);
+  border:1px solid rgba(0,229,160,0.1);
+  border-radius:8px;padding:12px 14px;
+}
+.dash-stat-num{
+  font-size:1.5rem;font-weight:800;
+  font-family:'IBM Plex Mono',monospace;color:var(--green);
+}
+.dash-stat-lbl{font-size:0.72rem;color:var(--muted);margin-top:2px;}
+
+.dash-rows{display:flex;flex-direction:column;gap:8px;}
+.dash-row{
+  display:flex;align-items:center;gap:12px;
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:8px;padding:10px 14px;
+  transition:all 0.2s;
+}
+.dash-row:hover{background:rgba(0,229,160,0.04);border-color:rgba(0,229,160,0.15);}
+.row-icon{
+  width:32px;height:32px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;font-size:1rem;
+  flex-shrink:0;
+}
+.row-info{flex:1}
+.row-title{font-size:0.82rem;font-weight:600;margin-bottom:2px;}
+.row-loc{font-size:0.72rem;color:var(--muted);}
+.row-badge{
+  padding:4px 10px;border-radius:100px;
+  font-size:0.68rem;font-weight:700;flex-shrink:0;
+}
+.badge-red{background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.2);}
+.badge-amber{background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.2);}
+.badge-green{background:rgba(0,229,160,0.15);color:var(--green);border:1px solid rgba(0,229,160,0.2);}
+.badge-blue{background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.2);}
+
+@keyframes riseIn{
+  from{opacity:0;transform:translateY(28px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* ─── SCROLL INDICATOR ─── */
+.scroll-hint{
+  position:absolute;bottom:36px;left:50%;
+  transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  opacity:0;animation:riseIn 1s 1.2s ease forwards;color:var(--muted);
+  font-size:0.75rem;z-index:2;
+}
+.scroll-line{
+  width:1.5px;height:36px;
+  background:linear-gradient(to bottom,var(--green),transparent);
+  animation:scrollDown 2s infinite;
+}
+@keyframes scrollDown{
+  0%{transform:scaleY(0);transform-origin:top}
+  50%{transform:scaleY(1);transform-origin:top}
+  51%{transform:scaleY(1);transform-origin:bottom}
+  100%{transform:scaleY(0);transform-origin:bottom}
+}
+
+/* ─── DIVIDER ─── */
+.divider{
+  height:1px;background:linear-gradient(90deg,transparent,rgba(0,229,160,0.2),transparent);
+  margin:0 60px;
+}
+
+/* ─── SECTION COMMONS ─── */
+.section{padding:110px 60px;max-width:1200px;margin:0 auto;}
+.section-full{padding:110px 0;}
+
+.tag{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:0.74rem;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:var(--green);
+  margin-bottom:20px;
+}
+.tag::before{
+  content:'';width:24px;height:1.5px;background:var(--green);
+}
+.section-heading{
+  font-size:clamp(2rem,4vw,3.2rem);font-weight:900;
+  line-height:1.15;margin-bottom:18px;
+}
+.section-sub{
+  font-size:1.05rem;color:rgba(223,245,238,0.55);
+  line-height:1.85;max-width:580px;font-weight:400;
+}
+
+/* ─── NUMBERS STRIP ─── */
+.numbers-strip{
+  background:var(--bg2);
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  padding:60px;display:flex;justify-content:center;
+  gap:0;
+}
+.num-item{
+  text-align:center;padding:0 70px;
+  border-left:1px solid var(--border);
+}
+.num-item:last-child{border-left:none}
+.num-val{
+  font-size:3rem;font-weight:900;
+  font-family:'IBM Plex Mono',monospace;
+  color:var(--green);text-shadow:0 0 24px rgba(0,229,160,0.3);
+  display:block;
+}
+.num-label{
+  font-size:0.85rem;color:var(--muted);
+  margin-top:6px;display:block;
+}
+
+/* ─── PROBLEM ─── */
+.problem-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:28px;margin-top:60px;
+}
+.problem-card{
+  background:var(--bg2);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:14px;padding:36px;
+  position:relative;overflow:hidden;
+  transition:all 0.3s;
+}
+.problem-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(239,68,68,0.04),transparent);
+  opacity:0;transition:opacity 0.3s;
+}
+.problem-card:hover{
+  border-color:rgba(239,68,68,0.2);
+  transform:translateY(-4px);
+  box-shadow:0 20px 40px rgba(0,0,0,0.3);
+}
+.problem-card:hover::before{opacity:1}
+.problem-icon{
+  width:52px;height:52px;border-radius:12px;
+  background:rgba(239,68,68,0.1);
+  border:1px solid rgba(239,68,68,0.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;margin-bottom:20px;
+}
+.problem-title{font-size:1.15rem;font-weight:700;margin-bottom:10px;}
+.problem-desc{font-size:0.92rem;color:var(--muted);line-height:1.8;}
+
+/* ─── SOLUTION ─── */
+.solutions-bg{
+  background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 50%,var(--bg) 100%);
+  padding:110px 0;
+}
+.solutions-inner{max-width:1200px;margin:0 auto;padding:0 60px;}
+.solutions-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:24px;margin-top:60px;
+}
+.sol-card{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:16px;padding:40px 32px;
+  position:relative;overflow:hidden;
+  transition:all 0.35s;
+  cursor:default;
+}
+.sol-card::after{
+  content:'';position:absolute;bottom:0;right:0;left:0;
+  height:3px;opacity:0;transition:opacity 0.3s;
+}
+.sol-card.track-1::after{background:linear-gradient(90deg,var(--green),var(--teal));}
+.sol-card.track-2::after{background:linear-gradient(90deg,var(--amber),#fbbf24);}
+.sol-card.track-3::after{background:linear-gradient(90deg,var(--blue),#818cf8);}
+.sol-card:hover{transform:translateY(-8px);box-shadow:0 32px 60px rgba(0,0,0,0.4)}
+.sol-card:hover::after{opacity:1}
+
+.sol-num{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.72rem;color:var(--muted);
+  margin-bottom:16px;letter-spacing:2px;
+}
+.sol-emoji{font-size:2.2rem;margin-bottom:16px;display:block;}
+.sol-title{font-size:1.25rem;font-weight:800;margin-bottom:12px;}
+.sol-desc{font-size:0.9rem;color:var(--muted);line-height:1.85;margin-bottom:24px;}
+.sol-feature{
+  display:flex;align-items:center;gap:10px;
+  font-size:0.84rem;color:rgba(223,245,238,0.6);
+  margin-bottom:8px;
+}
+.sol-feature::before{
+  content:'→';color:var(--green);font-weight:700;flex-shrink:0;
+}
+
+/* ─── HOW IT WORKS ─── */
+.how-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:80px;align-items:center;margin-top:60px;
+}
+.steps{display:flex;flex-direction:column;gap:0;}
+.step{
+  display:flex;gap:20px;padding:24px 0;
+  border-bottom:1px solid rgba(0,229,160,0.06);
+  transition:all 0.2s;cursor:default;
+}
+.step:last-child{border-bottom:none}
+.step:hover .step-circle{
+  background:var(--green);color:var(--bg);
+  box-shadow:0 0 20px rgba(0,229,160,0.4);
+}
+.step-circle{
+  width:44px;height:44px;border-radius:50%;
+  border:2px solid rgba(0,229,160,0.25);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:0.8rem;
+  font-weight:600;color:var(--green);flex-shrink:0;
+  transition:all 0.3s;
+}
+.step-text h4{font-size:1rem;font-weight:700;margin-bottom:6px;}
+.step-text p{font-size:0.88rem;color:var(--muted);line-height:1.75;}
+
+.phone-mockup{
+  background:var(--bg3);border-radius:32px;
+  border:1.5px solid rgba(0,229,160,0.12);
+  padding:16px;
+  box-shadow:
+    0 40px 80px rgba(0,0,0,0.5),
+    0 0 80px rgba(0,229,160,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+  max-width:280px;margin:0 auto;
+}
+.phone-screen{
+  background:var(--bg2);border-radius:22px;
+  overflow:hidden;min-height:480px;
+}
+.phone-status{
+  padding:10px 16px;display:flex;justify-content:space-between;
+  align-items:center;font-size:0.7rem;color:var(--muted);
+  font-family:'IBM Plex Mono',monospace;
+}
+.phone-header{
+  background:rgba(0,229,160,0.06);padding:16px;
+  border-bottom:1px solid rgba(0,229,160,0.08);
+  text-align:center;
+}
+.phone-header h3{font-size:0.95rem;font-weight:700;}
+.phone-header p{font-size:0.7rem;color:var(--muted);}
+.phone-body{padding:14px;}
+
+.ai-verify{
+  background:rgba(0,229,160,0.05);
+  border:1px solid rgba(0,229,160,0.12);
+  border-radius:10px;padding:14px;margin-bottom:12px;
+}
+.ai-verify-title{
+  font-size:0.75rem;font-weight:700;color:var(--green);
+  margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.ai-check{
+  display:flex;align-items:center;gap:10px;
+  font-size:0.78rem;color:var(--muted);margin-bottom:8px;
+}
+.ai-check:last-child{margin-bottom:0}
+.check-icon{
+  width:20px;height:20px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.6rem;flex-shrink:0;
+}
+.check-ok{background:rgba(0,229,160,0.15);color:var(--green);}
+.check-scan{
+  background:rgba(245,158,11,0.15);color:var(--amber);
+  animation:scanPulse 1.5s infinite;
+}
+@keyframes scanPulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+.report-mini{
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+  border-radius:8px;padding:12px;display:flex;gap:10px;align-items:center;
+  margin-bottom:8px;
+}
+.report-mini-img{
+  width:40px;height:40px;border-radius:6px;
+  background:linear-gradient(135deg,rgba(0,229,160,0.2),rgba(0,229,160,0.05));
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem;
+}
+.report-mini-info h4{font-size:0.78rem;font-weight:600;margin-bottom:3px;}
+.report-mini-info p{font-size:0.68rem;color:var(--muted);}
+
+/* ─── DASHBOARD SECTION ─── */
+.dashboard-preview{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:20px;overflow:hidden;
+  margin-top:60px;
+  box-shadow:0 40px 80px rgba(0,0,0,0.4),var(--shadow);
+}
+.dash-topbar{
+  padding:0 24px;height:52px;
+  background:rgba(0,0,0,0.3);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.dash-topbar-logo{
+  display:flex;align-items:center;gap:10px;
+  font-size:0.88rem;font-weight:700;
+}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.topbar-badge{
+  background:rgba(239,68,68,0.15);
+  border:1px solid rgba(239,68,68,0.25);
+  color:#ef4444;padding:4px 12px;border-radius:100px;
+  font-size:0.72rem;font-weight:700;
+  animation:alertPulse 2s infinite;
+}
+@keyframes alertPulse{
+  0%,100%{box-shadow:0 0 0 rgba(239,68,68,0.3)}
+  50%{box-shadow:0 0 12px rgba(239,68,68,0.3)}
+}
+.topbar-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--green),var(--green-dim));
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.7rem;font-weight:700;color:var(--bg);
+}
+
+.dash-layout{display:flex;min-height:480px;}
+.dash-sidebar{
+  width:200px;flex-shrink:0;
+  background:rgba(0,0,0,0.2);
+  border-left:1px solid var(--border);
+  padding:20px 0;
+}
+.sidebar-item{
+  padding:10px 20px;display:flex;align-items:center;gap:10px;
+  font-size:0.82rem;color:var(--muted);cursor:default;
+  transition:all 0.2s;
+}
+.sidebar-item:hover,.sidebar-item.active{
+  background:rgba(0,229,160,0.06);
+  color:var(--green);border-left:2px solid var(--green);
+}
+.sidebar-item .icon{font-size:1rem;}
+.dash-main{flex:1;padding:24px;overflow:hidden;}
+
+.kpi-row{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;
+}
+.kpi{
+  background:rgba(0,0,0,0.25);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:10px;padding:16px;
+  transition:all 0.2s;
+}
+.kpi:hover{border-color:rgba(0,229,160,0.2);transform:translateY(-2px)}
+.kpi-label{font-size:0.72rem;color:var(--muted);margin-bottom:8px;}
+.kpi-val{
+  font-size:1.7rem;font-weight:900;
+  font-family:'IBM Plex Mono',monospace;
+}
+.kpi-val.c-green{color:var(--green);}
+.kpi-val.c-red{color:#ef4444;}
+.kpi-val.c-amber{color:var(--amber);}
+.kpi-val.c-blue{color:var(--blue);}
+.kpi-sub{font-size:0.68rem;color:var(--muted);margin-top:4px;}
+
+.dash-bottom{display:grid;grid-template-columns:2fr 1fr;gap:16px;}
+
+.reports-table{
+  background:rgba(0,0,0,0.2);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:10px;overflow:hidden;
+}
+.table-head{
+  padding:12px 16px;
+  background:rgba(0,229,160,0.04);
+  border-bottom:1px solid rgba(0,229,160,0.08);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.table-title{font-size:0.82rem;font-weight:700;}
+.table-filter{
+  font-size:0.7rem;color:var(--green);
+  background:rgba(0,229,160,0.08);
+  border:1px solid rgba(0,229,160,0.15);
+  padding:4px 12px;border-radius:100px;
+  cursor:default;
+}
+.t-row{
+  display:grid;grid-template-columns:1fr 1fr auto auto;
+  gap:12px;align-items:center;
+  padding:10px 16px;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  font-size:0.78rem;transition:background 0.2s;
+}
+.t-row:hover{background:rgba(0,229,160,0.03)}
+.t-row:last-child{border-bottom:none}
+.t-type{display:flex;align-items:center;gap:8px;}
+.t-type-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.dot-red{background:#ef4444;box-shadow:0 0 4px #ef4444}
+.dot-amber{background:var(--amber);box-shadow:0 0 4px var(--amber)}
+.dot-green{background:var(--green);box-shadow:0 0 4px var(--green)}
+.t-loc{color:var(--muted);}
+.t-time{color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.7rem;}
+
+.priority-box{
+  background:rgba(0,0,0,0.2);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:10px;overflow:hidden;
+}
+.p-head{
+  padding:12px 16px;
+  background:rgba(0,229,160,0.04);
+  border-bottom:1px solid rgba(0,229,160,0.08);
+  font-size:0.82rem;font-weight:700;
+}
+.p-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 16px;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  font-size:0.78rem;
+}
+.p-item:last-child{border-bottom:none}
+.p-rank{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.68rem;color:var(--muted);
+  width:20px;text-align:center;flex-shrink:0;
+}
+.p-info{flex:1}
+.p-title{font-weight:600;margin-bottom:2px;}
+.p-sub{font-size:0.68rem;color:var(--muted);}
+.p-score{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.82rem;font-weight:700;
+}
+
+/* ─── AI FEATURES ─── */
+.ai-features{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:24px;margin-top:60px;
+}
+.ai-card{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:14px;padding:36px 28px;
+  position:relative;overflow:hidden;
+  transition:all 0.3s;
+}
+.ai-card::before{
+  content:'';
+  position:absolute;top:-60px;right:-60px;
+  width:160px;height:160px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(0,229,160,0.06),transparent);
+  transition:all 0.4s;
+}
+.ai-card:hover::before{
+  transform:scale(1.5);opacity:0.5;
+}
+.ai-card:hover{
+  border-color:rgba(0,229,160,0.2);
+  transform:translateY(-4px);
+  box-shadow:0 24px 50px rgba(0,0,0,0.3);
+}
+.ai-card-icon{
+  font-size:2rem;margin-bottom:18px;display:block;
+}
+.ai-card-title{font-size:1.1rem;font-weight:800;margin-bottom:10px;}
+.ai-card-desc{font-size:0.88rem;color:var(--muted);line-height:1.8;}
+.ai-tag{
+  display:inline-block;margin-top:16px;
+  font-size:0.7rem;font-weight:700;letter-spacing:1px;
+  color:var(--green);background:rgba(0,229,160,0.08);
+  border:1px solid rgba(0,229,160,0.15);
+  padding:4px 12px;border-radius:100px;
+}
+
+/* ─── FLOW ─── */
+.flow{
+  display:flex;align-items:center;justify-content:center;
+  gap:0;margin-top:60px;flex-wrap:wrap;
+}
+.flow-step{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:12px;padding:24px 20px;
+  text-align:center;width:160px;
+  transition:all 0.3s;
+}
+.flow-step:hover{
+  border-color:rgba(0,229,160,0.3);
+  transform:translateY(-4px);
+  box-shadow:0 16px 32px rgba(0,0,0,0.3);
+}
+.flow-icon{font-size:1.8rem;margin-bottom:10px;display:block;}
+.flow-title{font-size:0.82rem;font-weight:700;margin-bottom:4px;}
+.flow-desc{font-size:0.7rem;color:var(--muted);}
+.flow-arrow{
+  font-size:1.2rem;color:var(--green);
+  padding:0 12px;flex-shrink:0;
+  opacity:0.5;
+}
+
+/* ─── TEAM ─── */
+.team-banner{
+  background:linear-gradient(135deg,rgba(0,229,160,0.06),rgba(0,229,160,0.02));
+  border:1px solid rgba(0,229,160,0.12);
+  border-radius:20px;padding:60px;
+  display:flex;align-items:center;gap:60px;
+  margin-top:60px;
+}
+.team-logo{
+  width:120px;height:120px;border-radius:20px;
+  background:rgba(0,229,160,0.08);
+  border:1.5px solid rgba(0,229,160,0.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:3rem;flex-shrink:0;
+}
+.team-info h2{
+  font-size:2rem;font-weight:900;margin-bottom:10px;
+}
+.team-info p{
+  font-size:0.95rem;color:var(--muted);line-height:1.8;max-width:560px;
+}
+.team-tags{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.team-tag{
+  background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.15);
+  color:var(--green);padding:6px 16px;border-radius:100px;
+  font-size:0.78rem;font-weight:600;
+}
+
+/* ─── CTA ─── */
+.cta-section{
+  padding:120px 60px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.cta-bg{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 80% at 50% 50%,rgba(0,229,160,0.05) 0%,transparent 70%);
+}
+.cta-section h2{
+  font-size:clamp(2.2rem,5vw,4rem);font-weight:900;
+  margin-bottom:20px;position:relative;z-index:1;
+}
+.cta-section h2 span{color:var(--green)}
+.cta-section p{
+  font-size:1.05rem;color:var(--muted);
+  max-width:520px;margin:0 auto 40px;
+  line-height:1.8;position:relative;z-index:1;
+}
+.cta-btns{display:flex;gap:14px;justify-content:center;position:relative;z-index:1;}
+
+/* ─── FOOTER ─── */
+footer{
+  background:var(--bg2);
+  border-top:1px solid var(--border);
+  padding:60px;
+}
+.footer-inner{
+  max-width:1200px;margin:0 auto;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:24px;
+}
+.footer-logo{
+  display:flex;align-items:center;gap:12px;
+  font-size:1.1rem;font-weight:800;
+}
+.footer-copy{
+  font-size:0.82rem;color:var(--muted);text-align:center;
+}
+.footer-badge{
+  display:flex;align-items:center;gap:8px;
+  font-size:0.78rem;color:var(--muted);
+}
+.footer-badge span{color:var(--green);}
+
+/* ─── REVEAL ANIMATION ─── */
+.reveal{
+  opacity:0;transform:translateY(30px);
+  transition:opacity 0.7s ease,transform 0.7s ease;
+}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-d1{transition-delay:0.1s}
+.reveal-d2{transition-delay:0.2s}
+.reveal-d3{transition-delay:0.3s}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:900px){
+  nav{padding:0 24px}
+  .nav-links{display:none}
+  .hero{padding:90px 24px 60px}
+  .hero-inner{grid-template-columns:1fr;gap:40px}
+  .hero-right{display:none}
+  .section{padding:80px 24px}
+  .numbers-strip{padding:40px 24px;flex-wrap:wrap;gap:32px}
+  .num-item{border-left:none;border-bottom:1px solid var(--border);padding:0 0 32px;width:45%}
+  .problem-grid,.solutions-grid,.ai-features{grid-template-columns:1fr}
+  .how-grid{grid-template-columns:1fr;gap:40px}
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .dash-bottom{grid-template-columns:1fr}
+  .team-banner{flex-direction:column;padding:40px 24px}
+  footer{padding:40px 24px}
+  .footer-inner{flex-direction:column;text-align:center}
+  .flow{gap:8px}
+  .flow-arrow{display:none}
+  .flow-step{width:140px}
+  .solutions-inner{padding:0 24px}
+  .cta-section{padding:80px 24px}
+  .dash-sidebar{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- ═══════════════ NAV ═══════════════ -->
+<nav id="navbar">
+  <a href="#" class="logo">
+    <div class="logo-icon">
+      <div class="radar-base"></div>
+      <div class="radar-sweep"></div>
+      <div class="radar-dot"></div>
+    </div>
+    الراصد الذكي
+  </a>
+  <ul class="nav-links">
+    <li><a href="#problem">المشكلة</a></li>
+    <li><a href="#solution">الحل</a></li>
+    <li><a href="#dashboard">الداشبور</a></li>
+    <li><a href="#monitor">المراقب</a></li>
+    <li><a href="#how">كيف يعمل</a></li>
+  </ul>
+  <a href="#cta" class="nav-cta">ابدأ الآن</a>
+</nav>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="hero" id="home">
+  <canvas id="particles"></canvas>
+  <div class="hero-grid-overlay"></div>
+  <div class="hero-radial"></div>
+
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="hero-eyebrow">
+        <div class="eyebrow-dot"></div>
+        مبادرة فريق غيث التطوعي · أمانة منطقة جازان
+      </div>
+      <h1 class="hero-title">
+        المنصة الموحدة<br>
+        <span>للرصد البيئي الذكي</span>
+      </h1>
+      <p class="hero-title-sub">صوّر وامش — الذكاء الاصطناعي يكمّل الشغل</p>
+      <p class="hero-desc">
+        نظام متكامل يجمع كاميرا الجوال والذكاء الاصطناعي لرصد المشاكل البيئية،
+        تصنيفها تلقائياً، وتوجيهها للجهة المختصة في ثوانٍ.
+      </p>
+      <div class="hero-btns">
+        <a href="#dashboard" class="btn btn-green">← عرض الداشبور</a>
+        <a href="#solution" class="btn btn-ghost">اكتشف الحل</a>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="mockup-frame">
+        <div class="mockup-bar">
+          <div class="mockup-dot" style="background:#ef4444"></div>
+          <div class="mockup-dot" style="background:#f59e0b"></div>
+          <div class="mockup-dot" style="background:#22c55e"></div>
+          <span class="mockup-title">rasid.jazan.gov.sa/dashboard</span>
+        </div>
+        <div class="mockup-body">
+          <div class="dash-stats">
+            <div class="dash-stat">
+              <div class="dash-stat-num">١٢٤</div>
+              <div class="dash-stat-lbl">بلاغ اليوم</div>
+            </div>
+            <div class="dash-stat">
+              <div class="dash-stat-num" style="color:var(--amber)">٣١</div>
+              <div class="dash-stat-lbl">قيد المعالجة</div>
+            </div>
+            <div class="dash-stat">
+              <div class="dash-stat-num" style="color:#ef4444">٨</div>
+              <div class="dash-stat-lbl">عاجلة</div>
+            </div>
+          </div>
+          <div class="dash-rows">
+            <div class="dash-row">
+              <div class="row-icon" style="background:rgba(239,68,68,0.1)">🗑️</div>
+              <div class="row-info">
+                <div class="row-title">نفايات — حديقة الملك فهد</div>
+                <div class="row-loc">📍 جازان الجديدة · منذ ١٢ د</div>
+              </div>
+              <span class="row-badge badge-red">عاجل</span>
+            </div>
+            <div class="dash-row">
+              <div class="row-icon" style="background:rgba(56,189,248,0.1)">💧</div>
+              <div class="row-info">
+                <div class="row-title">تسرب مياه — شارع الملك عبدالله</div>
+                <div class="row-loc">📍 المطار · منذ ٢٥ د</div>
+              </div>
+              <span class="row-badge badge-blue">طارئ</span>
+            </div>
+            <div class="dash-row">
+              <div class="row-icon" style="background:rgba(245,158,11,0.1)">🏗️</div>
+              <div class="row-info">
+                <div class="row-title">أنقاض بناء — حي الروضة</div>
+                <div class="row-loc">📍 الروضة · منذ ١ س</div>
+              </div>
+              <span class="row-badge badge-amber">متوسط</span>
+            </div>
+            <div class="dash-row">
+              <div class="row-icon" style="background:rgba(0,229,160,0.1)">✅</div>
+              <div class="row-info">
+                <div class="row-title">تم المعالجة — ميدان المدينة</div>
+                <div class="row-loc">📍 وسط المدينة · ٢ س مضت</div>
+              </div>
+              <span class="row-badge badge-green">مُعالج</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <span>اكتشف أكثر</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- ═══════════════ NUMBERS ═══════════════ -->
+<div class="numbers-strip">
+  <div class="num-item">
+    <span class="num-val" data-target="3">٠</span>
+    <span class="num-label">مسارات بيئية رئيسية</span>
+  </div>
+  <div class="num-item">
+    <span class="num-val" data-target="98">٠</span>
+    <span class="num-label">% دقة الذكاء الاصطناعي</span>
+  </div>
+  <div class="num-item">
+    <span class="num-val" data-target="5">٠</span>
+    <span class="num-label">ثوانٍ للتصنيف التلقائي</span>
+  </div>
+  <div class="num-item">
+    <span class="num-val" data-target="24">٠</span>
+    <span class="num-label">ساعة مراقبة مستمرة</span>
+  </div>
+</div>
+
+<!-- ═══════════════ PROBLEM ═══════════════ -->
+<div class="divider" style="margin-top:0"></div>
+<section class="section reveal" id="problem">
+  <div class="tag">المشكلة</div>
+  <h2 class="section-heading">لماذا نحتاج هذا النظام؟</h2>
+  <p class="section-sub">
+    الرصد البيئي التقليدي يعتمد على المجهود البشري الكامل،
+    مما يخلق فجوات خطيرة في الاستجابة والكفاءة.
+  </p>
+
+  <div class="problem-grid">
+    <div class="problem-card reveal reveal-d1">
+      <div class="problem-icon">⏳</div>
+      <h3 class="problem-title">تأخير وبطء في الفرز</h3>
+      <p class="problem-desc">
+        فرز آلاف البلاغات يدوياً يستغرق وقتاً طويلاً،
+        مما يجعل المشاكل الحرجة تنتظر في الطابور مع العادية.
+      </p>
+    </div>
+    <div class="problem-card reveal reveal-d2">
+      <div class="problem-icon">🚛</div>
+      <h3 class="problem-title">إهدار الموارد والمعدات</h3>
+      <p class="problem-desc">
+        إرسال معدات غير مناسبة للموقع (سيارة صغيرة لمخلفات بناء ضخمة)
+        يضيع الوقت والتكلفة ويضاعف المشكلة.
+      </p>
+    </div>
+    <div class="problem-card reveal reveal-d1">
+      <div class="problem-icon">👁️‍🗨️</div>
+      <h3 class="problem-title">تجاهل المشاكل الحرجة</h3>
+      <p class="problem-desc">
+        التركيز على النفايات وتجاهل مشاكل أشد خطورة وتكلفة
+        كالهدر المائي ومخلفات البناء والتشوهات البصرية.
+      </p>
+    </div>
+    <div class="problem-card reveal reveal-d2">
+      <div class="problem-icon">📋</div>
+      <h3 class="problem-title">بيانات غير موثوقة</h3>
+      <p class="problem-desc">
+        الاعتماد على الوصف اليدوي يفتح الباب للخطأ والتلاعب،
+        دون إمكانية التحقق الفعلي من معالجة البلاغات ميدانياً.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ SOLUTION ═══════════════ -->
+<div class="solutions-bg">
+  <div class="solutions-inner">
+    <div class="tag reveal">الحل</div>
+    <h2 class="section-heading reveal">ثلاثة مسارات ذكية في تطبيق واحد</h2>
+    <p class="section-sub reveal">
+      بدل ما نكون فريق ينزل ينظف فقط — نقدم نظاماً ذكياً متكاملاً
+      يعمل بالكاميرا والذكاء الاصطناعي لمعالجة كل أنواع المشاكل البيئية.
+    </p>
+
+    <div class="solutions-grid" id="solution">
+      <div class="sol-card track-1 reveal reveal-d1">
+        <div class="sol-num">// TRACK_01</div>
+        <span class="sol-emoji">🗑️</span>
+        <h3 class="sol-title">النفايات والتشوه البصري</h3>
+        <p class="sol-desc">
+          يلقط النفايات العادية في الحدائق والشوارع ويصنفها تلقائياً حسب النوع والخطورة والحجم المقدّر.
+        </p>
+        <div class="sol-feature">كشف فوري بالكاميرا</div>
+        <div class="sol-feature">تصنيف النوع (عضوي / بلاستيك / مختلط)</div>
+        <div class="sol-feature">توجيه تلقائي لفريق النظافة</div>
+        <div class="sol-feature">تقييم الشدة (منخفض / متوسط / عالي)</div>
+      </div>
+
+      <div class="sol-card track-2 reveal reveal-d2">
+        <div class="sol-num">// TRACK_02</div>
+        <span class="sol-emoji">🏗️</span>
+        <h3 class="sol-title">الأنقاض الثقيلة ومخلفات البناء</h3>
+        <p class="sol-desc">
+          يلقط مخلفات الهدم والبناء والأهم إنه يُقدّر حجمها بدقة عشان تحدد للبلدية نوع الشاحنة المطلوبة.
+        </p>
+        <div class="sol-feature">تقدير الحجم ثلاثي الأبعاد</div>
+        <div class="sol-feature">تحديد نوع المعدة (دينا / قلاب / شيول)</div>
+        <div class="sol-feature">توجيه لإدارة البيئة والمخلفات</div>
+        <div class="sol-feature">خريطة تراكمية لمناطق التكرار</div>
+      </div>
+
+      <div class="sol-card track-3 reveal reveal-d3">
+        <div class="sol-num">// TRACK_03</div>
+        <span class="sol-emoji">💧</span>
+        <h3 class="sol-title">الهدر المائي والطارئ</h3>
+        <p class="sol-desc">
+          يكتشف تسربات المياه من المواسير والخزانات في المرافق العامة ويرفعها كـ "بلاغ طارئ" لفرق الصيانة.
+        </p>
+        <div class="sol-feature">كشف التسرب في ثوانٍ</div>
+        <div class="sol-feature">تصعيد تلقائي كبلاغ طارئ</div>
+        <div class="sol-feature">إشعار فوري لفرق الصيانة</div>
+        <div class="sol-feature">احتساب الهدر المائي المتوقع</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<section class="section" id="dashboard">
+  <div class="tag reveal">لوحة التحكم</div>
+  <h2 class="section-heading reveal">الداشبور — تحكم كامل بالبلاغات</h2>
+  <p class="section-sub reveal">
+    واجهة مركزية تمنح المسؤول رؤية شاملة وفورية لكل البلاغات مع
+    أدوات التصنيف الذكي والتحويل التلقائي للجهات المختصة.
+  </p>
+
+  <div class="dashboard-preview reveal">
+    <div class="dash-topbar">
+      <div class="dash-topbar-logo">
+        <div class="radar-dot" style="width:8px;height:8px;margin-left:8px"></div>
+        الراصد الذكي — لوحة الإدارة
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-badge">⚠ 8 بلاغات عاجلة</span>
+        <div class="topbar-avatar">أح</div>
+      </div>
+    </div>
+
+    <div class="dash-layout">
+      <div class="dash-sidebar">
+        <div class="sidebar-item active"><span class="icon">📊</span> لوحة التحكم</div>
+        <div class="sidebar-item"><span class="icon">📋</span> البلاغات</div>
+        <div class="sidebar-item"><span class="icon">🗺️</span> الخريطة</div>
+        <div class="sidebar-item"><span class="icon">👁️</span> المراقبون</div>
+        <div class="sidebar-item"><span class="icon">🤖</span> الذكاء الاصطناعي</div>
+        <div class="sidebar-item"><span class="icon">⭐</span> التقييمات</div>
+        <div class="sidebar-item"><span class="icon">🔔</span> الإشعارات</div>
+        <div class="sidebar-item"><span class="icon">⚙️</span> الإعدادات</div>
+      </div>
+
+      <div class="dash-main">
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="kpi-label">إجمالي البلاغات اليوم</div>
+            <div class="kpi-val c-green">١٢٤</div>
+            <div class="kpi-sub">↑ ١٨% عن أمس</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">بلاغات عاجلة</div>
+            <div class="kpi-val c-red">٠٨</div>
+            <div class="kpi-sub">تستوجب تدخلاً فورياً</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">قيد المعالجة</div>
+            <div class="kpi-val c-amber">٣١</div>
+            <div class="kpi-sub">موزعة على ٦ جهات</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">معالجة اليوم</div>
+            <div class="kpi-val c-blue">٨٥</div>
+            <div class="kpi-sub">↑ معدل استجابة ٩٢%</div>
+          </div>
+        </div>
+
+        <div class="dash-bottom">
+          <div class="reports-table">
+            <div class="table-head">
+              <span class="table-title">آخر البلاغات الواردة</span>
+              <span class="table-filter">🤖 تصنيف ذكي</span>
+            </div>
+            <div class="t-row">
+              <div class="t-type"><div class="t-type-dot dot-red"></div>تسرب مياه طارئ</div>
+              <div class="t-loc">📍 شارع الملك عبدالله</div>
+              <span class="row-badge badge-red">طارئ</span>
+              <div class="t-time">الآن</div>
+            </div>
+            <div class="t-row">
+              <div class="t-type"><div class="t-type-dot dot-red"></div>نفايات ضخمة</div>
+              <div class="t-loc">📍 حديقة الملك فهد</div>
+              <span class="row-badge badge-red">عاجل</span>
+              <div class="t-time">١٢ د</div>
+            </div>
+            <div class="t-row">
+              <div class="t-type"><div class="t-type-dot dot-amber"></div>أنقاض بناء</div>
+              <div class="t-loc">📍 حي الروضة</div>
+              <span class="row-badge badge-amber">متوسط</span>
+              <div class="t-time">٢٨ د</div>
+            </div>
+            <div class="t-row">
+              <div class="t-type"><div class="t-type-dot dot-amber"></div>تشوه بصري</div>
+              <div class="t-loc">📍 الكورنيش الشمالي</div>
+              <span class="row-badge badge-amber">متوسط</span>
+              <div class="t-time">٤٥ د</div>
+            </div>
+            <div class="t-row">
+              <div class="t-type"><div class="t-type-dot dot-green"></div>نفايات عادية</div>
+              <div class="t-loc">📍 سوق الخضار المركزي</div>
+              <span class="row-badge badge-green">مُعالج</span>
+              <div class="t-time">٢ س</div>
+            </div>
+          </div>
+
+          <div class="priority-box">
+            <div class="p-head">🔥 أولوية الذكاء الاصطناعي</div>
+            <div class="p-item">
+              <div class="p-rank">#١</div>
+              <div class="p-info">
+                <div class="p-title">تسرب مياه — المطار</div>
+                <div class="p-sub">كشف لحظي • طارئ</div>
+              </div>
+              <div class="p-score" style="color:#ef4444">٩٨</div>
+            </div>
+            <div class="p-item">
+              <div class="p-rank">#٢</div>
+              <div class="p-info">
+                <div class="p-title">نفايات — الحديقة</div>
+                <div class="p-sub">حجم كبير • عالي</div>
+              </div>
+              <div class="p-score" style="color:var(--amber)">٨٤</div>
+            </div>
+            <div class="p-item">
+              <div class="p-rank">#٣</div>
+              <div class="p-info">
+                <div class="p-title">أنقاض — الروضة</div>
+                <div class="p-sub">يحتاج شيول</div>
+              </div>
+              <div class="p-score" style="color:var(--blue)">٧١</div>
+            </div>
+            <div class="p-item">
+              <div class="p-rank">#٤</div>
+              <div class="p-info">
+                <div class="p-title">تشوه — الكورنيش</div>
+                <div class="p-sub">متوسط</div>
+              </div>
+              <div class="p-score" style="color:var(--green)">٥٢</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ AI FEATURES ═══════════════ -->
+<div class="divider"></div>
+<section class="section">
+  <div class="tag reveal">الذكاء الاصطناعي</div>
+  <h2 class="section-heading reveal">مزايا ذكية تميّز المنصة</h2>
+  <p class="section-sub reveal">
+    لا مجرد رصد — بل نظام ذكي يتعلم ويتطور مع كل بلاغ لتقديم قرارات أفضل.
+  </p>
+
+  <div class="ai-features">
+    <div class="ai-card reveal reveal-d1">
+      <span class="ai-card-icon">🧠</span>
+      <h3 class="ai-card-title">التصنيف الذكي التلقائي</h3>
+      <p class="ai-card-desc">نموذج ذكاء اصطناعي يحلل الصورة في أجزاء من الثانية ويصنف المشكلة حسب النوع والخطورة والحجم تلقائياً.</p>
+      <span class="ai-tag">Computer Vision</span>
+    </div>
+    <div class="ai-card reveal reveal-d2">
+      <span class="ai-card-icon">📍</span>
+      <h3 class="ai-card-title">التحقق الجغرافي الذكي</h3>
+      <p class="ai-card-desc">يتحقق من أن صورة "بعد المعالجة" مأخوذة من نفس إحداثيات البلاغ الأصلي، ويمنع التزوير والتلاعب.</p>
+      <span class="ai-tag">Geo-Verification</span>
+    </div>
+    <div class="ai-card reveal reveal-d3">
+      <span class="ai-card-icon">🔄</span>
+      <h3 class="ai-card-title">كشف التكرار والازدواجية</h3>
+      <p class="ai-card-desc">يتحقق من أن المرفقات لم ترسل من قبل في بلاغ آخر، ويمنع إعادة إرسال نفس الصورة لبلاغات متكررة.</p>
+      <span class="ai-tag">Duplicate Detection</span>
+    </div>
+    <div class="ai-card reveal reveal-d1">
+      <span class="ai-card-icon">⭐</span>
+      <h3 class="ai-card-title">تقييم المستخدمين والمراقبين</h3>
+      <p class="ai-card-desc">نظام تقييم شامل يقيّم دقة البلاغات المرسلة وجودة معالجة المراقبين الميدانيين لضمان الجودة.</p>
+      <span class="ai-tag">Quality Score</span>
+    </div>
+    <div class="ai-card reveal reveal-d2">
+      <span class="ai-card-icon">🔔</span>
+      <h3 class="ai-card-title">الإشعارات والتنبيهات الذكية</h3>
+      <p class="ai-card-desc">تنبيهات فورية عند وصول بلاغات عاجلة، وإشعارات تدريجية حسب الأولوية والجهة المختصة.</p>
+      <span class="ai-tag">Smart Alerts</span>
+    </div>
+    <div class="ai-card reveal reveal-d3">
+      <span class="ai-card-icon">📊</span>
+      <h3 class="ai-card-title">التحليل والإحصاء التنبؤي</h3>
+      <p class="ai-card-desc">تحليل أنماط البلاغات عبر الزمن لاستباق المشاكل المتكررة وتوزيع الموارد بكفاءة أعلى.</p>
+      <span class="ai-tag">Predictive Analytics</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ MONITOR PAGE ═══════════════ -->
+<div class="solutions-bg">
+  <section class="section" id="monitor" style="padding-top:0">
+    <div class="tag reveal">صفحة المراقب</div>
+    <h2 class="section-heading reveal">الميدان بيدك — التحقق بالذكاء الاصطناعي</h2>
+    <p class="section-sub reveal">
+      المراقب الميداني يستلم البلاغ، يتوجه للموقع، يصور المعالجة،
+      والذكاء الاصطناعي يتحقق من كل شيء.
+    </p>
+
+    <div class="how-grid" style="margin-top:60px" id="how">
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-circle">٠١</div>
+          <div class="step-text">
+            <h4>استلام البلاغ</h4>
+            <p>يصله إشعار فوري بتفاصيل البلاغ — الموقع، الصورة، النوع، والأولوية المعطاة من الذكاء الاصطناعي.</p>
+          </div>
+        </div>
+        <div class="step reveal reveal-d1">
+          <div class="step-circle">٠٢</div>
+          <div class="step-text">
+            <h4>التوجه الميداني</h4>
+            <p>ينطلق للموقع مباشرةً عبر خريطة مدمجة بالإحداثيات الدقيقة المرسلة مع البلاغ.</p>
+          </div>
+        </div>
+        <div class="step reveal reveal-d2">
+          <div class="step-circle">٠٣</div>
+          <div class="step-text">
+            <h4>معالجة المشكلة</h4>
+            <p>ينفذ الإجراء الميداني المطلوب بناءً على نوع البلاغ والتعليمات المرفقة.</p>
+          </div>
+        </div>
+        <div class="step reveal reveal-d3">
+          <div class="step-circle">٠٤</div>
+          <div class="step-text">
+            <h4>تصوير الموقع بعد المعالجة</h4>
+            <p>يصور الموقع من نفس الزاوية، وتلقائياً يُسجَّل الوقت والإحداثيات.</p>
+          </div>
+        </div>
+        <div class="step reveal">
+          <div class="step-circle" style="border-color:rgba(0,229,160,0.5);color:var(--green)">✓</div>
+          <div class="step-text">
+            <h4>التحقق بالذكاء الاصطناعي</h4>
+            <p>النموذج يتحقق: هل الموقع نفسه؟ هل المشكلة اختفت فعلاً؟ ثم يغلق البلاغ ويُقيّم المراقب.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-mockup reveal">
+        <div class="phone-screen">
+          <div class="phone-status">
+            <span>١٠:٣٢ ص</span>
+            <span>📶 ⚡</span>
+          </div>
+          <div class="phone-header">
+            <h3>صفحة المراقب</h3>
+            <p>بلاغ رقم #٢٤١٨ — معالجة جارية</p>
+          </div>
+          <div class="phone-body">
+            <div class="report-mini">
+              <div class="report-mini-img">🗑️</div>
+              <div class="report-mini-info">
+                <h4>نفايات ضخمة — حديقة الملك فهد</h4>
+                <p>📍 ٢١.٤٨٦٥° ش، ٣٩.١٩٢١° ط</p>
+              </div>
+            </div>
+
+            <div class="ai-verify">
+              <div class="ai-verify-title">
+                <span>🤖</span> التحقق بالذكاء الاصطناعي
+              </div>
+              <div class="ai-check">
+                <div class="check-icon check-ok">✓</div>
+                <span>الموقع الجغرافي مطابق ١٠٠%</span>
+              </div>
+              <div class="ai-check">
+                <div class="check-icon check-ok">✓</div>
+                <span>الصورة غير مكررة (جديدة)</span>
+              </div>
+              <div class="ai-check">
+                <div class="check-icon check-scan">⟳</div>
+                <span>جاري التحقق من المعالجة...</span>
+              </div>
+            </div>
+
+            <div style="background:rgba(0,229,160,0.05);border:1px solid rgba(0,229,160,0.1);border-radius:8px;padding:12px;text-align:center">
+              <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px;">تقييم أدائك على هذا البلاغ</div>
+              <div style="display:flex;justify-content:center;gap:6px;font-size:1.2rem">
+                ⭐⭐⭐⭐☆
+              </div>
+              <div style="font-size:0.7rem;color:var(--green);margin-top:6px;font-family:'IBM Plex Mono',monospace">٤.٢ / ٥.٠</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ═══════════════ USER FLOW ═══════════════ -->
+<section class="section reveal">
+  <div class="tag">كيف يعمل</div>
+  <h2 class="section-heading">صوّر وامش — الباقي علينا</h2>
+  <p class="section-sub">رحلة البلاغ من لحظة التقاطه حتى إغلاقه المُعتمد</p>
+
+  <div class="flow">
+    <div class="flow-step reveal reveal-d1">
+      <span class="flow-icon">📷</span>
+      <div class="flow-title">تصوير المشكلة</div>
+      <div class="flow-desc">المتطوع يوجه الكاميرا</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step reveal reveal-d2">
+      <span class="flow-icon">🤖</span>
+      <div class="flow-title">تحليل فوري</div>
+      <div class="flow-desc">AI يصنّف في ثوانٍ</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step reveal reveal-d1">
+      <span class="flow-icon">📤</span>
+      <div class="flow-title">إرسال تلقائي</div>
+      <div class="flow-desc">مع الإحداثيات والتصنيف</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step reveal reveal-d2">
+      <span class="flow-icon">🎯</span>
+      <div class="flow-title">توجيه ذكي</div>
+      <div class="flow-desc">للجهة المختصة</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step reveal reveal-d1">
+      <span class="flow-icon">🛠️</span>
+      <div class="flow-title">معالجة ميدانية</div>
+      <div class="flow-desc">المراقب ينفذ</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step reveal reveal-d2">
+      <span class="flow-icon">✅</span>
+      <div class="flow-title">تحقق وإغلاق</div>
+      <div class="flow-desc">AI يؤكد المعالجة</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ TEAM ═══════════════ -->
+<div class="divider"></div>
+<section class="section">
+  <div class="team-banner reveal">
+    <div class="team-logo">🌧️</div>
+    <div class="team-info">
+      <h2>فريق غيث التطوعي</h2>
+      <p>
+        مبادرة تطوعية بيئية متخصصة تعمل في منطقة جازان،
+        تجمع بين الشغف البيئي والتقنية الحديثة لخدمة المجتمع.
+        الراصد الذكي هو إسهامنا التقني لأمانة منطقة جازان.
+      </p>
+      <div class="team-tags">
+        <span class="team-tag">🌿 رصد بيئي</span>
+        <span class="team-tag">🤖 ذكاء اصطناعي</span>
+        <span class="team-tag">📍 منطقة جازان</span>
+        <span class="team-tag">🏛️ أمانة جازان</span>
+        <span class="team-tag">💚 تطوعي</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CTA ═══════════════ -->
+<div class="divider"></div>
+<section class="cta-section" id="cta">
+  <div class="cta-bg"></div>
+  <h2>جاهز تبدأ الرصد<br><span>الذكي معنا؟</span></h2>
+  <p>انضم لمنصة الراصد الذكي وساهم في تحسين البيئة بمنطقة جازان</p>
+  <div class="cta-btns">
+    <a href="#" class="btn btn-green">← ابدأ الآن</a>
+    <a href="#" class="btn btn-ghost">تواصل مع الفريق</a>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">
+      <div class="radar-dot" style="width:10px;height:10px;margin-left:10px"></div>
+      الراصد الذكي
+    </div>
+    <div class="footer-copy">
+      © ٢٠٢٥ جميع الحقوق محفوظة — مبادرة فريق غيث التطوعي
+    </div>
+    <div class="footer-badge">
+      مقدمة لـ <span>أمانة منطقة جازان</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ─── CURSOR ─── */
+const cur = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  cur.style.left=mx+'px';cur.style.top=my+'px';
+});
+setInterval(()=>{
+  rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;
+  ring.style.left=rx+'px';ring.style.top=ry+'px';
+},10);
+document.querySelectorAll('a,button,.sol-card,.ai-card,.step,.dash-row').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{
+    cur.style.transform='translate(-50%,-50%) scale(2)';
+    ring.style.width='60px';ring.style.height='60px';
+  });
+  el.addEventListener('mouseleave',()=>{
+    cur.style.transform='translate(-50%,-50%) scale(1)';
+    ring.style.width='36px';ring.style.height='36px';
+  });
+});
+
+/* ─── NAVBAR ─── */
+window.addEventListener('scroll',()=>{
+  document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>40);
+});
+
+/* ─── PARTICLES ─── */
+const canvas=document.getElementById('particles');
+const ctx=canvas.getContext('2d');
+let W,H,particles=[];
+function resize(){
+  W=canvas.width=window.innerWidth;
+  H=canvas.height=window.innerHeight;
+}
+resize();
+window.addEventListener('resize',resize);
+for(let i=0;i<60;i++){
+  particles.push({
+    x:Math.random()*1920,y:Math.random()*1080,
+    vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.3,
+    r:Math.random()*1.5+0.5,
+    a:Math.random()*0.5+0.1
+  });
+}
+function drawParticles(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='rgba(0,229,160,';
+  particles.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=W;if(p.x>W)p.x=0;
+    if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(0,229,160,${p.a})`;
+    ctx.fill();
+  });
+  particles.forEach((p,i)=>{
+    particles.slice(i+1).forEach(q=>{
+      const d=Math.hypot(p.x-q.x,p.y-q.y);
+      if(d<120){
+        ctx.beginPath();
+        ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);
+        ctx.strokeStyle=`rgba(0,229,160,${0.06*(1-d/120)})`;
+        ctx.lineWidth=0.5;ctx.stroke();
+      }
+    });
+  });
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+
+/* ─── REVEAL ON SCROLL ─── */
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting)e.target.classList.add('visible');
+  });
+},{threshold:0.12});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+
+/* ─── COUNTER ANIMATION ─── */
+const numObserver=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const el=e.target;
+    const target=parseInt(el.dataset.target);
+    let current=0;
+    const inc=target/40;
+    const timer=setInterval(()=>{
+      current+=inc;
+      if(current>=target){current=target;clearInterval(timer);}
+      // Convert to Arabic numeral display
+      el.textContent=Math.floor(current).toLocaleString('ar-SA');
+    },30);
+    numObserver.unobserve(el);
+  });
+},{threshold:0.5});
+document.querySelectorAll('[data-target]').forEach(el=>numObserver.observe(el));
+
+/* ─── SMOOTH ACTIVE LINKS ─── */
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    const t=document.querySelector(a.getAttribute('href'));
+    if(t)t.scrollIntoView({behavior:'smooth'});
+  });
+});
+</script>
+</body>
+</html>
